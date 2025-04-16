@@ -71,7 +71,7 @@ const LynkcoPage: React.FC<LynkcoPageProps> = ({ email, password, ohToken }) => 
       });
   }, []);
 
-  if (loading) return <div>Loading LynkCo items...</div>;
+  if (loading) return <div className="flex justify-center items-center min-h-full text-blue-600">Loading LynkCo items...</div>;
 
   // console.log("Items to render:", items);
   return (

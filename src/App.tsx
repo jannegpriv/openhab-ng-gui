@@ -212,8 +212,8 @@ function App() {
               </a>
             </div>
           </div>
-        ) : loading ? (
-          <div className="text-blue-600">Loading bindings...</div>
+        ) : (loading && !email) ? (
+          <div className="flex justify-center items-center h-full text-blue-600">Loading bindings...</div>
         ) : error ? (
           <div className="text-red-600 text-xs whitespace-pre-line">{error}</div>
         ) : (
@@ -251,7 +251,7 @@ function App() {
       {/* Main Content */}
       <main className="flex-1 h-screen bg-[#181818] flex items-center justify-center">
         {loading && (
-          <div className="text-[#e64a19] text-lg font-semibold">Loading bindings...</div>
+          <div className="text-[#e64a19] text-lg text-center w-full font-semibold">Loading bindings...</div>
         )}
         {(!email || !password || !ohToken) ? (
           <div className="flex flex-1 justify-center items-center">
@@ -331,7 +331,9 @@ function App() {
             </div>
           )
         ) : (
-          <div className="text-gray-400 text-lg text-center w-full">Select an add-on in the sidebar to view its items.</div>
+          !loading && (
+            <div className="text-gray-400 text-lg text-center w-full">Select an add-on in the sidebar to view its items.</div>
+          )
         )}
       </main>
     </div>
