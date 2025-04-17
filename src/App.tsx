@@ -110,27 +110,50 @@ function App() {
     setTypeFilter(""); // Reset type filter when switching binding
     setSelectedItem(null); // Clear selected item when switching binding
     setItemsLoading(true);
-    fetch("http://localhost:3001/rest/items", {
-      headers: {
-        "Authorization": "Basic " + btoa(email + ":" + password),
-        "X-OPENHAB-TOKEN": ohToken,
-        "Accept": "application/json",
-      },
-    })
-      .then((r) => r.json())
-      .then((allItems) => {
-        // Generic item filtering for all bindings:
-        // 1. If item has a 'binding' property matching binding id
-        // 2. Fallback: if item.name or item.label includes binding id
-        const id = selectedBinding.id.toLowerCase();
-        const filteredItems = allItems.filter((item: any) => {
-          if (item.binding && typeof item.binding === "string" && item.binding.toLowerCase() === id) return true;
-          if (item.name && item.name.toLowerCase().includes(id)) return true;
-          if (item.label && item.label.toLowerCase().includes(id)) return true;
-          return false;
-        });
-        setItems(filteredItems);
-      })
+
+    // Helper: Get all items linked to things of this binding
+    async function fetchBindingItems() {
+      // 1. Fetch all things
+      const thingsRes = await fetch("http://localhost:3001/rest/things", {
+        headers: {
+          "Authorization": "Basic " + btoa(email + ":" + password),
+          "X-OPENHAB-TOKEN": ohToken,
+          "Accept": "application/json",
+        },
+      });
+      const allThings = await thingsRes.json();
+      // 2. Find things for this binding
+      const bindingId = selectedBinding.id.toLowerCase();
+      const bindingThings = allThings.filter((thing: any) =>
+        thing.thingTypeUID && thing.thingTypeUID.toLowerCase().startsWith(bindingId + ":")
+      );
+      // 3. Gather all linked item names from channels
+      const linkedItemNames = new Set();
+      bindingThings.forEach((thing: any) => {
+        if (thing.channels) {
+          thing.channels.forEach((channel: any) => {
+            if (channel.linkedItems && Array.isArray(channel.linkedItems)) {
+              channel.linkedItems.forEach((itemName: string) => linkedItemNames.add(itemName));
+            }
+          });
+        }
+      });
+      // 4. Fetch all items
+      const itemsRes = await fetch("http://localhost:3001/rest/items", {
+        headers: {
+          "Authorization": "Basic " + btoa(email + ":" + password),
+          "X-OPENHAB-TOKEN": ohToken,
+          "Accept": "application/json",
+        },
+      });
+      const allItems = await itemsRes.json();
+      // 5. Filter items to only those linked to binding's things
+      const filteredItems = allItems.filter((item: any) => linkedItemNames.has(item.name));
+      return filteredItems;
+    }
+
+    fetchBindingItems()
+      .then(setItems)
       .catch(() => setItems([]))
       .finally(() => setItemsLoading(false));
   }, [selectedBinding, email, password, ohToken]);
