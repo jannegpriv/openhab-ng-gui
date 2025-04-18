@@ -10,6 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
+app.use('/rest/items', express.text({ type: '*/*' }));
 app.use(express.json());
 
 // Proxy any /rest/* route to myopenhab.org/rest/*
@@ -29,6 +30,14 @@ app.all(/^\/rest(\/.*)?$/, async (req, res) => {
   }
 
   try {
+    let bodyToSend = undefined;
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      if (typeof req.body === 'string') {
+        bodyToSend = req.body; // for text/plain
+      } else if (typeof req.body === 'object' && req.headers['content-type'] && req.headers['content-type'].includes('application/json')) {
+        bodyToSend = JSON.stringify(req.body);
+      }
+    }
     const openhabRes = await fetch(apiUrl, {
       method: req.method,
       headers: {
@@ -37,7 +46,7 @@ app.all(/^\/rest(\/.*)?$/, async (req, res) => {
         'Accept': 'application/json',
         'Content-Type': req.get('content-type') || 'application/json',
       },
-      body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined,
+      body: bodyToSend,
     });
     const contentType = openhabRes.headers.get('content-type');
     res.status(openhabRes.status);

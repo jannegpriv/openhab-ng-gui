@@ -14,6 +14,7 @@ interface Binding {
 
 function App() {
   const [typeFilter, setTypeFilter] = useState<string>("");
+  const [stringFilter, setStringFilter] = useState<string>("");
   const [email, setEmail] = useState(() => localStorage.getItem("oh_email") || "");
   const [password, setPassword] = useState(() => localStorage.getItem("oh_password") || "");
   const [ohToken, setOhToken] = useState(() => localStorage.getItem("oh_token") || "");
@@ -319,6 +320,15 @@ function App() {
                       <option key={type} value={type}>{type}</option>
                     ))}
                   </select>
+                  <label htmlFor="stringFilter" className="text-gray-300 font-medium ml-4">Name/Label:</label>
+                  <input
+                    id="stringFilter"
+                    className="bg-[#232323] text-white px-3 py-2 rounded border border-[#e64a19] focus:outline-none"
+                    type="text"
+                    placeholder="Filter (wildcard: *)"
+                    value={stringFilter}
+                    onChange={e => setStringFilter(e.target.value)}
+                  />
                 </div>
               </div>
               <div className="overflow-auto w-full max-w-4xl rounded-xl shadow-xl">
@@ -332,7 +342,19 @@ function App() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-800">
-                    {items.filter(item => !typeFilter || item.type === typeFilter).map((item, idx) => (
+                    {items
+  .filter(item => !typeFilter || item.type === typeFilter)
+  .filter(item => {
+    if (!stringFilter) return true;
+    let filter = stringFilter;
+    // If no wildcard, match as substring: wrap with *
+    if (!filter.includes('*')) filter = `*${filter}*`;
+    // Convert wildcard string to regexp: * -> .*
+    const pattern = '^' + filter.split('*').map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$';
+    const regex = new RegExp(pattern, 'i');
+    return regex.test(item.name);
+  })
+  .map((item, idx) => (
                       <tr
                         key={item.name}
                         className="hover:bg-[#333] cursor-pointer"
@@ -340,7 +362,15 @@ function App() {
                       >
                         <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-100">{item.name}</td>
                         <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-100">{item.label}</td>
-                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-100">{item.state}</td>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-100">{
+  item.type === 'Switch' ? (
+    <SwitchButton item={item} email={email} password={password} ohToken={ohToken} />
+  ) : item.type === 'Dimmer' ? (
+    <DimmerSlider item={item} email={email} password={password} ohToken={ohToken} />
+  ) : (
+    item.state
+  )
+}</td>
                         <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-100">{item.type}</td>
                       </tr>
                     ))}
@@ -359,6 +389,153 @@ function App() {
           )
         )}
       </main>
+    </div>
+  );
+}
+
+// SwitchButton: Button for Switch items to send ON command
+function SwitchButton({ item, email, password, ohToken }: { item: any, email: string, password: string, ohToken: string }) {
+  const [loading, setLoading] = useState<null | 'ON' | 'OFF'>(null);
+  const [success, setSuccess] = useState<null | 'ON' | 'OFF'>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleCommand(command: 'ON' | 'OFF', e: React.MouseEvent) {
+    e.stopPropagation();
+    setLoading(command);
+    setSuccess(null);
+    setError(null);
+    try {
+      const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + btoa(email + ':' + password),
+          'X-OPENHAB-TOKEN': ohToken,
+          'Content-Type': 'text/plain',
+        },
+        body: command,
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setSuccess(command);
+      setTimeout(() => setSuccess(null), 1200);
+    } catch (err: any) {
+      setError(err.message || 'Failed to send command');
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  return (
+    <div className="flex flex-row items-center gap-2">
+      <button
+        className={`px-3 py-1 rounded bg-[#e64a19] text-white font-semibold shadow hover:bg-[#ff7043] transition-colors text-xs ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+        disabled={!!loading}
+        onClick={e => handleCommand('ON', e)}
+        title="Send ON command"
+      >
+        {loading === 'ON' ? 'Sending...' : 'ON'}
+      </button>
+      <button
+        className={`px-3 py-1 rounded bg-gray-500 text-white font-semibold shadow hover:bg-gray-700 transition-colors text-xs ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+        disabled={!!loading}
+        onClick={e => handleCommand('OFF', e)}
+        title="Send OFF command"
+      >
+        {loading === 'OFF' ? 'Sending...' : 'OFF'}
+      </button>
+      {success && <span className="text-green-400 text-xs">✔</span>}
+      {error && <span className="text-red-400 text-xs" title={error}>✖</span>}
+    </div>
+  );
+}
+
+
+// DimmerSlider: Slider for Dimmer items to send value 0-100
+function DimmerSlider({ item, email, password, ohToken }: { item: any, email: string, password: string, ohToken: string }) {
+  const [value, setValue] = useState<number>(() => {
+    const v = parseInt(item.state, 10);
+    return isNaN(v) ? 0 : v;
+  });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch the latest state after a successful command
+  async function refreshState() {
+    try {
+      const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+        headers: {
+          'Authorization': 'Basic ' + btoa(email + ':' + password),
+          'X-OPENHAB-TOKEN': ohToken,
+          'Accept': 'application/json',
+        },
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        const v = parseInt(updated.state, 10);
+        setValue(isNaN(v) ? 0 : v);
+      }
+    } catch {}
+  }
+
+  async function sendValue(newValue: number | string) {
+    setLoading(true);
+    setSuccess(false);
+    setError(null);
+    try {
+      const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + btoa(email + ':' + password),
+          'X-OPENHAB-TOKEN': ohToken,
+          'Content-Type': 'text/plain',
+        },
+        body: String(newValue),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 1200);
+      await refreshState(); // update value after successful command
+    } catch (err: any) {
+      setError(err.message || 'Failed to send command');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleSliderChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const newValue = parseInt(e.target.value, 10);
+    setValue(newValue);
+    sendValue(newValue);
+  }
+
+  return (
+    <div className="flex flex-row items-center gap-2 w-full">
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={value}
+        disabled={loading}
+        onChange={handleSliderChange}
+        className="w-24 accent-orange-500"
+        title="Set dimmer value"
+      />
+      <span className="text-xs text-gray-200 w-8 text-right">{value}</span>
+      <button
+        className="px-2 py-1 rounded bg-[#e64a19] text-white text-xs font-semibold hover:bg-[#ff7043]"
+        disabled={loading}
+        onClick={() => sendValue('ON')}
+        title="Send ON to dimmer (test)"
+      >ON</button>
+      <button
+        className="px-2 py-1 rounded bg-gray-600 text-white text-xs font-semibold hover:bg-gray-800"
+        disabled={loading}
+        onClick={() => sendValue('OFF')}
+        title="Send OFF to dimmer (test)"
+      >OFF</button>
+      {loading && <span className="text-orange-400 text-xs">...</span>}
+      {success && <span className="text-green-400 text-xs">✔</span>}
+      {error && <span className="text-red-400 text-xs" title={error}>✖</span>}
     </div>
   );
 }

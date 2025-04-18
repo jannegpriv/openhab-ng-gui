@@ -49,15 +49,26 @@ const ItemDetailWithChart: React.FC<ItemDetailWithChartProps> = ({ item, email, 
         // Filter out-of-range data points in case the backend returns more than requested
         const startMs = new Date(startStr).getTime();
         const endMs = new Date(endStr).getTime();
-        setHistory(Array.isArray(data.data)
+        let processedHistory = Array.isArray(data.data)
           ? data.data
-              .map((d: any) => ({ time: d.time, value: parseFloat(d.state) }))
-              .filter((d: any) => {
-                const t = typeof d.time === 'number' ? d.time : new Date(d.time).getTime();
-                return t >= startMs && t <= endMs;
-              })
-          : []
-        );
+            .map((d: any) => ({ time: typeof d.time === 'number' ? d.time : new Date(d.time).getTime(), value: parseFloat(d.state) }))
+            .filter((d: any) => {
+              return d.time >= startMs && d.time <= endMs;
+            })
+          : [];
+        // Always prepend a virtual point at startMs with the first value if there is at least one point
+        if (processedHistory.length > 0) {
+          const first = processedHistory[0];
+          // Always add a virtual point at startMs with the Y value of the first data point
+          if (first.time !== startMs) {
+            processedHistory.unshift({
+              ...first,
+              time: startMs
+            });
+          }
+        }
+        console.log('Chart debug:', { startMs, endMs, processedHistory });
+setHistory(processedHistory);
       })
       .catch(() => setError("Could not load historical data."))
       .finally(() => setLoading(false));
@@ -142,7 +153,7 @@ const ItemDetailWithChart: React.FC<ItemDetailWithChartProps> = ({ item, email, 
                   interval="preserveStartEnd"
                 />
                 
-                <YAxis domain={['auto', 'auto']} />
+                <YAxis domain={['dataMin', 'dataMax']} tickFormatter={v => v.toLocaleString('en-US')} width={90} />
                 <Tooltip content={({ active, payload, label }) => {
                   if (active && payload && payload.length) {
                     const d = new Date(label);
