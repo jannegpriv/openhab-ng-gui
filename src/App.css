@@ -5,6 +5,15 @@
   padding: 0;
 }
 
+/* Custom shadow and border for sticky table header/filter */
+.sticky-header {
+  box-shadow: 0 4px 16px 0 rgba(230,74,25,0.09), 0 2px 0 0 #e64a19;
+  border-bottom: 2px solid #e64a19;
+  background: rgba(35,35,35,0.95);
+  backdrop-filter: blur(2px);
+  z-index: 30;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;

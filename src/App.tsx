@@ -299,89 +299,126 @@ function App() {
                 password={password}
                 ohToken={ohToken}
                 onBack={() => setSelectedItem(null)}
+                onItemUpdate={async () => {
+                  // Fetch updated item state and update selectedItem
+                  const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(selectedItem.name)}`, {
+                    headers: {
+                      'Authorization': 'Basic ' + btoa(email + ':' + password),
+                      'X-OPENHAB-TOKEN': ohToken,
+                      'Accept': 'application/json',
+                    },
+                  });
+                  if (res.ok) {
+                    const updated = await res.json();
+                    setSelectedItem(updated);
+                  }
+                }}
               />
             </div>
           ) : items.length > 0 ? (
-            <div className="flex flex-col w-full h-full items-center justify-start pt-8">
-              {/* Table Header with Column Descriptions */}
-              <div className="mb-4 w-full max-w-4xl flex flex-col md:flex-row md:items-center md:justify-between">
-                <div className="font-bold text-lg text-white mb-2 md:mb-0">Items Table</div>
-                {/* Filter Dropdown */}
-                <div className="flex items-center space-x-2">
-                  <label htmlFor="typeFilter" className="text-gray-300 font-medium">Filter by Type:</label>
-                  <select
-                    id="typeFilter"
-                    className="bg-[#232323] text-white px-3 py-2 rounded border border-[#e64a19] focus:outline-none"
-                    value={typeFilter}
-                    onChange={e => setTypeFilter(e.target.value)}
-                  >
-                    <option value="">All</option>
-                    {Array.from(new Set(items.map(item => item.type))).sort().map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                  <label htmlFor="stringFilter" className="text-gray-300 font-medium ml-4">Name/Label:</label>
-                  <input
-                    id="stringFilter"
-                    className="bg-[#232323] text-white px-3 py-2 rounded border border-[#e64a19] focus:outline-none"
-                    type="text"
-                    placeholder="Filter (wildcard: *)"
-                    value={stringFilter}
-                    onChange={e => setStringFilter(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="overflow-auto w-full max-w-4xl rounded-xl shadow-xl">
-                <table className="w-full divide-y divide-gray-700 bg-[#222]">
-                  <thead>
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-orange-400 uppercase tracking-wider">Item name</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-orange-400 uppercase tracking-wider">Description</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-orange-400 uppercase tracking-wider">Value</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-orange-400 uppercase tracking-wider">Type</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-800">
-                    {items
-  .filter(item => !typeFilter || item.type === typeFilter)
-  .filter(item => {
-    if (!stringFilter) return true;
-    let filter = stringFilter;
-    // If no wildcard, match as substring: wrap with *
-    if (!filter.includes('*')) filter = `*${filter}*`;
-    // Convert wildcard string to regexp: * -> .*
-    const pattern = '^' + filter.split('*').map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$';
-    const regex = new RegExp(pattern, 'i');
-    return regex.test(item.name);
-  })
-  .map((item, idx) => (
-                      <tr
-                        key={item.name}
-                        className="hover:bg-[#333] cursor-pointer"
-                        onClick={() => setSelectedItem(item)}
-                      >
-                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-100">{item.name}</td>
-                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-100">{item.label}</td>
-                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-100">{
-  item.type === 'Switch' ? (
-    <SwitchButton item={item} email={email} password={password} ohToken={ohToken} />
-  ) : item.type === 'Dimmer' ? (
-    <DimmerSlider item={item} email={email} password={password} ohToken={ohToken} />
-  ) : (
-    item.state
-  )
-}</td>
-                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-100">{item.type}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            
+  <div className="w-full h-full flex-grow rounded-xl shadow-xl flex flex-col">
+  {/* Sticky Filter + Table Header */}
+  <div className="sticky top-0 z-30 bg-[#232323]/95 pt-2 pb-2 w-full flex flex-col md:flex-row md:items-center md:justify-between border-b-2 border-orange-400 shadow-lg backdrop-blur-sm transition-colors h-16 sticky-header">
+    <div className="font-bold text-lg text-white mb-2 md:mb-0">Items Table</div>
+    <div className="flex items-center space-x-2">
+      <label htmlFor="typeFilter" className="text-gray-300 font-medium">Filter by Type:</label>
+      <select
+        id="typeFilter"
+        className="bg-[#232323] text-white px-3 py-2 rounded border border-[#e64a19] focus:outline-none"
+        value={typeFilter}
+        onChange={e => setTypeFilter(e.target.value)}
+      >
+        <option value="">All</option>
+        {Array.from(new Set(items.map(item => item.type))).sort().map(type => (
+          <option key={type} value={type}>{type}</option>
+        ))}
+      </select>
+      <label htmlFor="stringFilter" className="text-gray-300 font-medium ml-4">Name/Label:</label>
+      <input
+        id="stringFilter"
+        className="bg-[#232323] text-white px-3 py-2 rounded border border-[#e64a19] focus:outline-none"
+        type="text"
+        placeholder="Filter (wildcard: *)"
+        value={stringFilter}
+        onChange={e => setStringFilter(e.target.value)}
+      />
+    </div>
+  </div>
+  <div className="overflow-auto w-full h-full flex-grow">
+    <table className="w-full table-fixed divide-y divide-gray-700 bg-[#222]">
+      <colgroup>
+        <col style={{ width: '24%' }} />
+        <col style={{ width: '36%' }} />
+        <col style={{ width: '20%' }} />
+        <col style={{ width: '20%' }} />
+      </colgroup>
+      <thead>
+        <tr>
+          <th className="px-4 py-3 text-left text-xs font-bold text-orange-400 uppercase tracking-wider">Item name</th>
+          <th className="px-4 py-3 text-left text-xs font-bold text-orange-400 uppercase tracking-wider">Description</th>
+          <th className="px-4 py-3 text-left text-xs font-bold text-orange-400 uppercase tracking-wider">Value</th>
+          <th className="px-4 py-3 text-left text-xs font-bold text-orange-400 uppercase tracking-wider">Type</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-800">
+        {items
+          .filter(item => !typeFilter || item.type === typeFilter)
+          .filter(item => {
+            if (!stringFilter) return true;
+            let filter = stringFilter;
+            if (!filter.includes('*')) filter = `*${filter}*`;
+            const pattern = '^' + filter.split('*').map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$';
+            const regex = new RegExp(pattern, 'i');
+            return regex.test(item.name);
+          })
+          .map((item) => (
+            <tr
+              key={item.name}
+              className="hover:bg-[#333] cursor-pointer"
+              onClick={e => {
+                // Only open detail if the click is NOT on a button or input
+                if ((e.target as HTMLElement).tagName === 'BUTTON' || (e.target as HTMLElement).tagName === 'INPUT') return;
+                setSelectedItem(item);
+              }}
+            >
+              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-100 overflow-hidden text-ellipsis max-w-[16rem]">{item.name}</td>
+              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-100 overflow-hidden text-ellipsis max-w-[24rem]">{item.label}</td>
+              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-100">{
+                item.type === 'Switch' ? (
+                  <SwitchButton item={item} email={email} password={password} ohToken={ohToken} onItemUpdate={() => {}} />
+                ) : item.type === 'Dimmer' ? (
+                  <DimmerSlider item={item} email={email} password={password} ohToken={ohToken} onItemUpdate={async () => {
+                    // Fetch updated item state and update items array
+                    const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+                      headers: {
+                        'Authorization': 'Basic ' + btoa(email + ':' + password),
+                        'X-OPENHAB-TOKEN': ohToken,
+                        'Accept': 'application/json',
+                      },
+                    });
+                    if (res.ok) {
+                      const updated = await res.json();
+                      setItems(prev => prev.map(it => it.name === item.name ? updated : it));
+                    }
+                  }} />
+                ) : (
+                  item.state
+                )
+              }</td>
+              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-100">{item.type}</td>
+            </tr>
+          ))}
+      </tbody>
+    </table>
+  </div>
+</div>
           ) : (
-            <div className="bg-[#181818] rounded-xl shadow-2xl flex items-center justify-center grow mx-8 my-12 h-[60vh] min-h-[260px]">
-              <div className="text-gray-400 text-lg text-center w-full">No items found for this binding.</div>
-            </div>
+            <>
+              <div className="bg-[#181818] rounded-xl shadow-2xl flex items-center justify-center grow mx-8 my-12 h-[60vh] min-h-[260px]">
+                <div className="text-gray-400 text-lg text-center w-full">No items found for this binding.</div>
+              </div>
+            </>
           )
         ) : (
           !loading && (
@@ -394,15 +431,13 @@ function App() {
 }
 
 // SwitchButton: Button for Switch items to send ON command
-function SwitchButton({ item, email, password, ohToken }: { item: any, email: string, password: string, ohToken: string }) {
+export function SwitchButton({ item, email, password, ohToken, onItemUpdate }: { item: any, email: string, password: string, ohToken: string, onItemUpdate?: () => void }) {
   const [loading, setLoading] = useState<null | 'ON' | 'OFF'>(null);
-  const [success, setSuccess] = useState<null | 'ON' | 'OFF'>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleCommand(command: 'ON' | 'OFF', e: React.MouseEvent) {
     e.stopPropagation();
     setLoading(command);
-    setSuccess(null);
     setError(null);
     try {
       const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
@@ -415,8 +450,7 @@ function SwitchButton({ item, email, password, ohToken }: { item: any, email: st
         body: command,
       });
       if (!res.ok) throw new Error(await res.text());
-      setSuccess(command);
-      setTimeout(() => setSuccess(null), 1200);
+      if (onItemUpdate) onItemUpdate();
     } catch (err: any) {
       setError(err.message || 'Failed to send command');
     } finally {
@@ -442,7 +476,7 @@ function SwitchButton({ item, email, password, ohToken }: { item: any, email: st
       >
         {loading === 'OFF' ? 'Sending...' : 'OFF'}
       </button>
-      {success && <span className="text-green-400 text-xs">✔</span>}
+      
       {error && <span className="text-red-400 text-xs" title={error}>✖</span>}
     </div>
   );
@@ -450,91 +484,168 @@ function SwitchButton({ item, email, password, ohToken }: { item: any, email: st
 
 
 // DimmerSlider: Slider for Dimmer items to send value 0-100
-function DimmerSlider({ item, email, password, ohToken }: { item: any, email: string, password: string, ohToken: string }) {
+export function DimmerSlider({ item, email, password, ohToken, onItemUpdate }: { item: any, email: string, password: string, ohToken: string, onItemUpdate?: () => void }) {
   const [value, setValue] = useState<number>(() => {
     const v = parseInt(item.state, 10);
     return isNaN(v) ? 0 : v;
   });
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [localValue, setLocalValue] = useState<number | null>(null);
 
-  // Fetch the latest state after a successful command
-  async function refreshState() {
-    try {
-      const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
-        headers: {
-          'Authorization': 'Basic ' + btoa(email + ':' + password),
-          'X-OPENHAB-TOKEN': ohToken,
-          'Accept': 'application/json',
-        },
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        const v = parseInt(updated.state, 10);
-        setValue(isNaN(v) ? 0 : v);
-      }
-    } catch {}
+  // Update value from backend only when not dragging
+  useEffect(() => {
+    if (!loading && !dragging) {
+      const v = parseInt(item.state, 10);
+      console.log('[DimmerSlider] Backend state (item.state):', item.state, 'parsed:', v);
+      setValue(isNaN(v) ? 0 : v);
+      setLocalValue(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.state, loading, dragging]);
+
+  // Slider event handlers
+  function handleSliderChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const newValue = parseInt(e.target.value, 10);
+    setLocalValue(newValue);
   }
+  function handleSliderStart() {
+    setDragging(true);
+  }
+  function handleSliderEnd() {
+    setDragging(false);
+    if (localValue !== null) {
+      setValue(localValue);
+    console.log('[DimmerSlider] setValue in frontend:', localValue);
+      // Send value to backend only on drag end
+      console.log('[DimmerSlider] Sending value to backend:', localValue);
+      (async (finalValue: number) => {
+        setLoading(true);
+        
+        setError(null);
+        try {
+          // 1. Send the value to the backend
+          const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Basic ' + btoa(email + ':' + password),
+              'X-OPENHAB-TOKEN': ohToken,
+              'Content-Type': 'text/plain',
+            },
+            body: String(finalValue),
+          });
+          let backendResponse;
+          try {
+            backendResponse = await res.text();
+          } catch (e) {
+            backendResponse = '[Could not read response body]';
+          }
+          console.log('[DimmerSlider] Backend POST response:', backendResponse, 'Status:', res.status);
+          if (!res.ok) throw new Error(backendResponse);
+          
+          // 2. Immediately fetch the latest state from the backend
+          const stateRes = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+            headers: {
+              'Authorization': 'Basic ' + btoa(email + ':' + password),
+              'X-OPENHAB-TOKEN': ohToken,
+              'Accept': 'application/json',
+            },
+          });
+          if (stateRes.ok) {
+            const updated = await stateRes.json();
+            const v = parseInt(updated.state, 10);
+            setValue(isNaN(v) ? 0 : v);
+            console.log('[DimmerSlider] Refetched backend state:', updated.state, 'parsed:', v);
+          } else {
+            console.warn('[DimmerSlider] Failed to refetch item state after POST');
+          }
 
-  async function sendValue(newValue: number | string) {
-    setLoading(true);
-    setSuccess(false);
-    setError(null);
-    try {
-      const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Basic ' + btoa(email + ':' + password),
-          'X-OPENHAB-TOKEN': ohToken,
-          'Content-Type': 'text/plain',
-        },
-        body: String(newValue),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 1200);
-      await refreshState(); // update value after successful command
-    } catch (err: any) {
-      setError(err.message || 'Failed to send command');
-    } finally {
-      setLoading(false);
+          if (onItemUpdate) onItemUpdate();
+        } catch (err: any) {
+          setError(err.message || 'Failed to send command');
+        } finally {
+          setLoading(false);
+        }
+      })(localValue);
+      setLocalValue(null);
     }
   }
 
-  function handleSliderChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const newValue = parseInt(e.target.value, 10);
-    setValue(newValue);
-    sendValue(newValue);
-  }
-
   return (
-    <div className="flex flex-row items-center gap-2 w-full">
+    <div className="flex flex-row items-center gap-2 w-full min-w-[170px]">
       <input
         type="range"
         min={0}
         max={100}
-        value={value}
+        value={dragging && localValue !== null ? localValue : value}
         disabled={loading}
         onChange={handleSliderChange}
-        className="w-24 accent-orange-500"
+        onMouseDown={handleSliderStart}
+        onMouseUp={handleSliderEnd}
+        onTouchStart={handleSliderStart}
+        onTouchEnd={handleSliderEnd}
+        className="w-28 accent-orange-500 flex-shrink-0"
+        style={{ minWidth: '7rem', maxWidth: '7rem' }}
         title="Set dimmer value"
       />
-      <span className="text-xs text-gray-200 w-8 text-right">{value}</span>
+      <span className="text-xs text-gray-200 w-10 text-right font-mono inline-block" style={{ minWidth: '2ch' }}>{value}</span>
       <button
         className="px-2 py-1 rounded bg-[#e64a19] text-white text-xs font-semibold hover:bg-[#ff7043]"
         disabled={loading}
-        onClick={() => sendValue('ON')}
+        onClick={async () => {
+          setLoading(true);
+          
+          setError(null);
+          try {
+            const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+              method: 'POST',
+              headers: {
+                'Authorization': 'Basic ' + btoa(email + ':' + password),
+                'X-OPENHAB-TOKEN': ohToken,
+                'Content-Type': 'text/plain',
+              },
+              body: 'ON',
+            });
+            if (!res.ok) throw new Error(await res.text());
+            if (onItemUpdate) onItemUpdate();
+          } catch (err: any) {
+            setError(err.message || 'Failed to send ON');
+          } finally {
+            setLoading(false);
+          }
+        }}
         title="Send ON to dimmer (test)"
       >ON</button>
       <button
         className="px-2 py-1 rounded bg-gray-600 text-white text-xs font-semibold hover:bg-gray-800"
         disabled={loading}
-        onClick={() => sendValue('OFF')}
+        onClick={async () => {
+          setLoading(true);
+          
+          setError(null);
+          try {
+            const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+              method: 'POST',
+              headers: {
+                'Authorization': 'Basic ' + btoa(email + ':' + password),
+                'X-OPENHAB-TOKEN': ohToken,
+                'Content-Type': 'text/plain',
+              },
+              body: 'OFF',
+            });
+            if (!res.ok) throw new Error(await res.text());
+            if (onItemUpdate) onItemUpdate();
+          } catch (err: any) {
+            setError(err.message || 'Failed to send OFF');
+          } finally {
+            setLoading(false);
+          }
+        }}
         title="Send OFF to dimmer (test)"
       >OFF</button>
-      {loading && <span className="text-orange-400 text-xs">...</span>}
-      {success && <span className="text-green-400 text-xs">✔</span>}
+      {/* Removed loading indicator to eliminate visual artifact */}
+      
       {error && <span className="text-red-400 text-xs" title={error}>✖</span>}
     </div>
   );

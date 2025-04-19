@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Brush } from 'recharts';
+import { SwitchButton, DimmerSlider } from './App';
 
 interface ItemDetailWithChartProps {
   item: any;
@@ -7,9 +8,10 @@ interface ItemDetailWithChartProps {
   password: string;
   ohToken: string;
   onBack: () => void;
+  onItemUpdate?: () => void;
 }
 
-const ItemDetailWithChart: React.FC<ItemDetailWithChartProps> = ({ item, email, password, ohToken, onBack }) => {
+const ItemDetailWithChart: React.FC<ItemDetailWithChartProps> = ({ item, email, password, ohToken, onBack, onItemUpdate }) => {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -176,6 +178,11 @@ setHistory(processedHistory);
                     }}
                   />
                 )}
+                {item.type === 'Switch' ? (
+                  <SwitchButton item={item} email={email} password={password} ohToken={ohToken} onItemUpdate={onItemUpdate} />
+                ) : item.type === 'Dimmer' ? (
+                  <DimmerSlider item={item} email={email} password={password} ohToken={ohToken} onItemUpdate={onItemUpdate} />
+                ) : null}
               </LineChart>
             </ResponsiveContainer>
           )}
