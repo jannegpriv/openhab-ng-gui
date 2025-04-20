@@ -201,27 +201,27 @@ const ItemDetailWithChart: React.FC<ItemDetailWithChartProps> = ({ item, email, 
       ? item.state
       : `http://localhost:3001/rest/items/${encodeURIComponent(item.name)}/state`;
     return (
-      <div className="bg-white rounded-lg shadow-lg p-8 w-full h-full flex flex-col mx-0 mt-8 items-center justify-center">
-        <button
-          className="mb-4 px-4 py-2 bg-[#e64a19] text-white rounded hover:bg-[#ff7043] w-fit"
-          onClick={onBack}
-        >
-          ← Back to Items
-        </button>
-        <div className="text-2xl font-bold text-gray-900 mb-4" title={item.name}>{item.name.replace(/_/g, ' ')}</div>
-        {item.label && <div className="text-lg text-gray-600 mb-4">{item.label}</div>}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '85vh', margin: 0, padding: 0 }}>
-          <img
-            src={imageUrl}
-            alt={item.label || item.name}
-            style={{ maxWidth: '95vw', maxHeight: '85vh', width: 'auto', height: 'auto', objectFit: 'contain', borderRadius: '0.5rem', boxShadow: '0 2px 16px rgba(0,0,0,0.12)' }}
-            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
-        </div>
-        <div className="text-gray-400 text-xs mt-2">If the image does not load, check the item state or permissions.</div>
-        {/* Debug: show src type */}
-        <div className="text-xs text-gray-300 mt-1">Source: {isDataUrl ? 'base64 (data URL)' : 'REST API'}</div>
-      </div>
+      <div className="bg-white rounded-lg shadow-lg w-full h-full flex flex-col mx-0 mt-8 items-center justify-center p-0" style={{ minHeight: '90vh' }}>
+  <button
+    className="mb-4 px-4 py-2 bg-[#e64a19] text-white rounded hover:bg-[#ff7043] w-fit"
+    onClick={onBack}
+  >
+    ← Back to Items
+  </button>
+  <div className="text-2xl font-bold text-gray-900 mb-4" title={item.name}>{item.name.replace(/_/g, ' ')}</div>
+  {item.label && <div className="text-lg text-gray-600 mb-4">{item.label}</div>}
+  <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%' }}>
+    <img
+      src={imageUrl}
+      alt={item.label || item.name}
+      style={{ width: '100%', height: '100%', maxWidth: '98vw', maxHeight: '80vh', objectFit: 'contain', borderRadius: '0.5rem', boxShadow: '0 2px 16px rgba(0,0,0,0.12)' }}
+      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+    />
+  </div>
+  <div className="text-gray-400 text-xs mt-2">If the image does not load, check the item state or permissions.</div>
+  {/* Debug: show src type */}
+  <div className="text-xs text-gray-300 mt-1">Source: {isDataUrl ? 'base64 (data URL)' : 'REST API'}</div>
+</div>
     );
   }
   const [history, setHistory] = useState<any[]>([]);
