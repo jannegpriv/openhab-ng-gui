@@ -16,6 +16,5 @@ services:
     buildCommand: "npm install && npm run build"
     staticPublishPath: dist
     envVars:
-      - key: VITE_API_BASE_URL
-        value: "https://openhab-ng-gui-proxy.onrender.com"
+
     autoDeploy: true
