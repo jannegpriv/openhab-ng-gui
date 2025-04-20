@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { HsvColor, HsvColorPicker } from 'react-colorful';
 import { getApiBaseUrl } from './apiBaseUrl';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Brush } from 'recharts';
 import { SwitchButton, DimmerSlider } from './App';
@@ -47,15 +48,8 @@ const ItemDetailWithChart: React.FC<ItemDetailWithChartProps> = ({ item, email, 
     function rgbToHex(r: number, g: number, b: number) {
       return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
     }
-    // Convert hex to HSB
-    function hexToHsb(hex: string) {
-      let r = 0, g = 0, b = 0;
-      if (hex.length === 7) {
-        r = parseInt(hex.slice(1, 3), 16);
-        g = parseInt(hex.slice(3, 5), 16);
-        b = parseInt(hex.slice(5, 7), 16);
-      }
-      // Convert RGB to HSB
+    // Convert RGB to HSB (HSV)
+    function rgbToHsb(r: number, g: number, b: number) {
       r /= 255; g /= 255; b /= 255;
       const max = Math.max(r, g, b), min = Math.min(r, g, b);
       let h = 0, s = 0, v = max;
@@ -77,18 +71,41 @@ const ItemDetailWithChart: React.FC<ItemDetailWithChartProps> = ({ item, email, 
         b: Math.round(v * 100),
       };
     }
+
+    // Convert HSB to HSV for react-colorful (HSV = HSB)
+    const hsv: HsvColor = { h: color.h, s: color.s, v: color.b };
     const rgb = hsbToRgb(color.h, color.s, color.b);
     const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
 
-    // Always use a stable callback to avoid remounting input
-    const handleColorChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const hexVal = e.target.value;
-      const hsb = hexToHsb(hexVal);
+    // Debounced color update logic
+    const [pendingColor, setPendingColor] = useState(hsv);
+    const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
+
+    // Update color preview instantly
+    const handleColorChange = (newHsv: HsvColor) => {
+      setPendingColor(newHsv);
+      const hsb = { h: Math.round(newHsv.h), s: Math.round(newHsv.s), b: Math.round(newHsv.v) };
       setColor(hsb);
+      // Clear any pending debounce
+      if (debounceTimeout) clearTimeout(debounceTimeout);
+      // Set a new debounce timeout (optional: send after 500ms pause)
+      setDebounceTimeout(setTimeout(() => {
+        sendColorUpdate(hsb);
+      }, 500));
+    };
+
+    // Send color to backend when user releases pointer/touch
+    const handlePointerUp = () => {
+      if (debounceTimeout) clearTimeout(debounceTimeout);
+      const hsb = { h: Math.round(pendingColor.h), s: Math.round(pendingColor.s), b: Math.round(pendingColor.v) };
+      sendColorUpdate(hsb);
+    };
+
+    // Send color update to backend
+    const sendColorUpdate = useCallback(async (hsb: { h: number; s: number; b: number }) => {
       setLoading(true);
       setError(null);
       try {
-        // Always set Content-Type
         const res = await fetch(`${getApiBaseUrl()}/rest/items/${encodeURIComponent(item.name)}`, {
           method: 'POST',
           headers: {
@@ -118,19 +135,142 @@ const ItemDetailWithChart: React.FC<ItemDetailWithChartProps> = ({ item, email, 
         <div className="text-2xl font-bold text-gray-900 mb-4" title={item.name}>{item.name.replace(/_/g, ' ')}</div>
         {item.label && <div className="text-lg text-gray-600 mb-4">{item.label}</div>}
         <div className="flex flex-col items-center gap-4">
-          <div className="flex items-center gap-4">
-            <span className="inline-block w-16 h-16 rounded border border-gray-300 shadow-lg" style={{ background: hex }} title={hex} />
-            <input
-              type="color"
-              value={hex}
-              onChange={handleColorChange}
-              className="w-16 h-16 border-none bg-transparent cursor-pointer"
-              disabled={loading}
-              aria-label="Pick color"
-              style={{ minWidth: 64, minHeight: 64 }}
-            />
+          <div className="flex flex-col items-center gap-6">
+            <div
+              onPointerUp={handlePointerUp}
+              onTouchEnd={handlePointerUp}
+              style={{ display: 'inline-block' }}
+            >
+              <HsvColorPicker
+                color={pendingColor}
+                onChange={handleColorChange}
+                style={{ width: 320, height: 320, maxWidth: '90vw' }}
+                className="shadow-2xl rounded-xl border-2 border-gray-400"
+                aria-label="Pick color (HSB/HSV)"
+              />
+            </div>
+            <div className="mt-2 px-6 py-3 rounded-lg bg-gray-100 text-lg text-gray-800 font-mono shadow-md flex flex-col items-center w-full max-w-md">
+              <span className="mb-2"><b>HSB</b>: {color.h}, {color.s}, {color.b}</span>
+              <div className="flex gap-2 items-center mb-3">
+                <label className="flex flex-col items-center text-xs">
+                  HEX
+                  <input
+                    type="text"
+                    maxLength={7}
+                    value={hex}
+                    onChange={e => {
+                      const val = e.target.value;
+                      // Validate hex: must be #RRGGBB
+                      if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+                        // Convert to RGB
+                        const r = parseInt(val.slice(1, 3), 16);
+                        const g = parseInt(val.slice(3, 5), 16);
+                        const b = parseInt(val.slice(5, 7), 16);
+                        const hsb = rgbToHsb(r, g, b);
+                        handleColorChange({ h: hsb.h, s: hsb.s, v: hsb.b });
+                      }
+                    }}
+                    className="w-28 px-2 py-1 rounded border border-gray-300 text-base text-center mb-2"
+                    style={{ textTransform: 'uppercase' }}
+                  />
+                </label>
+              </div>
+              <div className="flex gap-2 items-center mb-3">
+                <label className="flex flex-col items-center text-xs">
+                  H
+                  <input
+                    type="number"
+                    min={0}
+                    max={359}
+                    value={pendingColor.h}
+                    onChange={e => {
+                      const h = Math.max(0, Math.min(359, Number(e.target.value)));
+                      handleColorChange({ ...pendingColor, h });
+                    }}
+                    className="w-16 px-2 py-1 rounded border border-gray-300 text-base text-center"
+                  />
+                </label>
+                <label className="flex flex-col items-center text-xs">
+                  S
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={pendingColor.s}
+                    onChange={e => {
+                      const s = Math.max(0, Math.min(100, Number(e.target.value)));
+                      handleColorChange({ ...pendingColor, s });
+                    }}
+                    className="w-16 px-2 py-1 rounded border border-gray-300 text-base text-center"
+                  />
+                </label>
+                <label className="flex flex-col items-center text-xs">
+                  B
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={pendingColor.v}
+                    onChange={e => {
+                      const v = Math.max(0, Math.min(100, Number(e.target.value)));
+                      handleColorChange({ ...pendingColor, v });
+                    }}
+                    className="w-16 px-2 py-1 rounded border border-gray-300 text-base text-center"
+                  />
+                </label>
+              </div>
+              <div className="flex gap-2 items-center">
+                <label className="flex flex-col items-center text-xs">
+                  R
+                  <input
+                    type="number"
+                    min={0}
+                    max={255}
+                    value={rgb.r}
+                    onChange={e => {
+                      const r = Math.max(0, Math.min(255, Number(e.target.value)));
+                      const { g, b } = rgb;
+                      const hsb = rgbToHsb(r, g, b);
+                      handleColorChange({ h: hsb.h, s: hsb.s, v: hsb.b });
+                    }}
+                    className="w-16 px-2 py-1 rounded border border-gray-300 text-base text-center"
+                  />
+                </label>
+                <label className="flex flex-col items-center text-xs">
+                  G
+                  <input
+                    type="number"
+                    min={0}
+                    max={255}
+                    value={rgb.g}
+                    onChange={e => {
+                      const g = Math.max(0, Math.min(255, Number(e.target.value)));
+                      const { r, b } = rgb;
+                      const hsb = rgbToHsb(r, g, b);
+                      handleColorChange({ h: hsb.h, s: hsb.s, v: hsb.b });
+                    }}
+                    className="w-16 px-2 py-1 rounded border border-gray-300 text-base text-center"
+                  />
+                </label>
+                <label className="flex flex-col items-center text-xs">
+                  B
+                  <input
+                    type="number"
+                    min={0}
+                    max={255}
+                    value={rgb.b}
+                    onChange={e => {
+                      const b = Math.max(0, Math.min(255, Number(e.target.value)));
+                      const { r, g } = rgb;
+                      const hsb = rgbToHsb(r, g, b);
+                      handleColorChange({ h: hsb.h, s: hsb.s, v: hsb.b });
+                    }}
+                    className="w-16 px-2 py-1 rounded border border-gray-300 text-base text-center"
+                  />
+                </label>
+              </div>
+            </div>
           </div>
-          <div className="text-sm text-gray-700">HSB: {color.h}, {color.s}, {color.b} &nbsp; | &nbsp; HEX: {hex}</div>
           {loading && <div className="text-[#e64a19] text-xs">Setting color…</div>}
           {error && <div className="text-red-500 text-xs">{error}</div>}
         </div>
