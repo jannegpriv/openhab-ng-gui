@@ -347,7 +347,7 @@ const itemsRes = await fetch(itemsUrl, {
         id="stringFilter"
         className="bg-[#232323] text-white px-3 py-2 rounded border border-[#e64a19] focus:outline-none"
         type="text"
-        placeholder="Filter (wildcard: *)"
+        placeholder="Name/Label (wildcard: *)"
         value={stringFilter}
         onChange={e => setStringFilter(e.target.value)}
       />
@@ -364,7 +364,7 @@ const itemsRes = await fetch(itemsUrl, {
       <thead>
         <tr>
           <th className="px-4 py-3 text-left text-xs font-bold text-orange-400 uppercase tracking-wider">Item name</th>
-          <th className="px-4 py-3 text-left text-xs font-bold text-orange-400 uppercase tracking-wider">Description</th>
+          <th className="px-4 py-3 text-left text-xs font-bold text-orange-400 uppercase tracking-wider">Label</th>
           <th className="px-4 py-3 text-left text-xs font-bold text-orange-400 uppercase tracking-wider">Value</th>
           <th className="px-4 py-3 text-left text-xs font-bold text-orange-400 uppercase tracking-wider">Type</th>
         </tr>
@@ -378,7 +378,7 @@ const itemsRes = await fetch(itemsUrl, {
             if (!filter.includes('*')) filter = `*${filter}*`;
             const pattern = '^' + filter.split('*').map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$';
             const regex = new RegExp(pattern, 'i');
-            return regex.test(item.name);
+            return regex.test(item.name) || regex.test(item.label || '');
           })
           .map((item) => (
             <tr
