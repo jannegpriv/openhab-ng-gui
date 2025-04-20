@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { getApiBaseUrl } from './apiBaseUrl';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Brush } from 'recharts';
 import { SwitchButton, DimmerSlider } from './App';
 
@@ -88,7 +89,7 @@ const ItemDetailWithChart: React.FC<ItemDetailWithChartProps> = ({ item, email, 
       setError(null);
       try {
         // Always set Content-Type
-        const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+        const res = await fetch(`${getApiBaseUrl()}/rest/items/${encodeURIComponent(item.name)}`, {
           method: 'POST',
           headers: {
             'Authorization': 'Basic ' + btoa(email + ':' + password),
@@ -199,29 +200,29 @@ const ItemDetailWithChart: React.FC<ItemDetailWithChartProps> = ({ item, email, 
     const isDataUrl = typeof item.state === 'string' && item.state.startsWith('data:image/');
     const imageUrl = isDataUrl
       ? item.state
-      : `http://localhost:3001/rest/items/${encodeURIComponent(item.name)}/state`;
+      : `${getApiBaseUrl()}/rest/items/${encodeURIComponent(item.name)}/state`;
     return (
       <div className="bg-white rounded-lg shadow-lg w-full h-full flex flex-col mx-0 mt-8 items-center justify-center p-0" style={{ minHeight: '90vh' }}>
-  <button
-    className="mb-4 px-4 py-2 bg-[#e64a19] text-white rounded hover:bg-[#ff7043] w-fit"
-    onClick={onBack}
-  >
-    ← Back to Items
-  </button>
-  <div className="text-2xl font-bold text-gray-900 mb-4" title={item.name}>{item.name.replace(/_/g, ' ')}</div>
-  {item.label && <div className="text-lg text-gray-600 mb-4">{item.label}</div>}
-  <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%' }}>
-    <img
-      src={imageUrl}
-      alt={item.label || item.name}
-      style={{ width: '100%', height: '100%', maxWidth: '98vw', maxHeight: '80vh', objectFit: 'contain', borderRadius: '0.5rem', boxShadow: '0 2px 16px rgba(0,0,0,0.12)' }}
-      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-    />
-  </div>
-  <div className="text-gray-400 text-xs mt-2">If the image does not load, check the item state or permissions.</div>
-  {/* Debug: show src type */}
-  <div className="text-xs text-gray-300 mt-1">Source: {isDataUrl ? 'base64 (data URL)' : 'REST API'}</div>
-</div>
+        <button
+          className="mb-4 px-4 py-2 bg-[#e64a19] text-white rounded hover:bg-[#ff7043] w-fit"
+          onClick={onBack}
+        >
+          ← Back to Items
+        </button>
+        <div className="text-2xl font-bold text-gray-900 mb-4" title={item.name}>{item.name.replace(/_/g, ' ')}</div>
+        {item.label && <div className="text-lg text-gray-600 mb-4">{item.label}</div>}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%' }}>
+          <img
+            src={imageUrl}
+            alt={item.label || item.name}
+            style={{ width: '100%', height: '100%', maxWidth: '98vw', maxHeight: '80vh', objectFit: 'contain', borderRadius: '0.5rem', boxShadow: '0 2px 16px rgba(0,0,0,0.12)' }}
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        </div>
+        <div className="text-gray-400 text-xs mt-2">If the image does not load, check the item state or permissions.</div>
+        {/* Debug: show src type */}
+        <div className="text-xs text-gray-300 mt-1">Source: {isDataUrl ? 'base64 (data URL)' : 'REST API'}</div>
+      </div>
     );
   }
   const [history, setHistory] = useState<any[]>([]);
@@ -247,7 +248,7 @@ const ItemDetailWithChart: React.FC<ItemDetailWithChartProps> = ({ item, email, 
     }
     const startStr = start.toISOString();
     const endStr = now.toISOString();
-    const url = `http://localhost:3001/rest/persistence/items/${encodeURIComponent(item.name)}?starttime=${startStr}&endtime=${endStr}&boundary=true&itemState=true`;
+    const url = `${getApiBaseUrl()}/rest/persistence/items/${encodeURIComponent(item.name)}?starttime=${startStr}&endtime=${endStr}&boundary=true&itemState=true`;
     console.log('Fetching history:', { url, range });
     fetch(url,
       {
