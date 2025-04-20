@@ -8,8 +8,16 @@ Want to try this app yourself? You can deploy both the frontend and proxy with a
 
 1. Click the button above and connect your GitHub account.
 2. Render will set up both the Express proxy and the frontend for you.
-3. Once deployed, update the frontend's API URL (if needed) to point to your new proxy's URL.
+3. **In most cases, everything will work out of the box—no manual configuration needed!**
 4. Enjoy your own openHAB dashboard in the cloud!
+
+### FAQ: Do I need to set any environment variables?
+- **No, not for standard setups.** The frontend will automatically talk to the proxy using the default Render.com service names.
+- **Only set `VITE_API_BASE_URL` if:**
+  - You rename your proxy service to something other than `openhab-ng-gui-proxy`.
+  - You want to use a custom proxy/backend URL.
+
+If you do need to set it, add `VITE_API_BASE_URL` in your frontend's Render.com Environment settings and set its value to your proxy's public URL.
 
 ---
 
