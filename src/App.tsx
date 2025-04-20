@@ -228,24 +228,8 @@ const itemsRes = await fetch(itemsUrl, {
               }}
               autoComplete="off"
             />
-            <div className="text-xs text-gray-500">
-              <a
-                href="https://myopenhab.org/account"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline"
-              >
-                Get myopenHAB credentials
-              </a>
-              <br />
-              <a
-                href="https://your-openhab-instance:8080/settings/api-tokens"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline"
-              >
-                Get openHAB API token (local instance)
-              </a>
+            <div className="text-xs" style={{ color: '#e64a19' }}>
+              Use your credentials @myopenhab.org. Create an API token on your local instance.
             </div>
           </div>
         ) : (loading && !email) ? (
