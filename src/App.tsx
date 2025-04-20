@@ -375,10 +375,10 @@ function App() {
           .map((item) => (
             <tr
                key={item.name}
-               className={`${item.type === 'String' ? '' : 'hover:bg-[#333] cursor-pointer'}`}
+               className={`${['String', 'Switch', 'Dimmer'].includes(item.type) ? '' : 'hover:bg-[#333] cursor-pointer'}`}
                onClick={e => {
                  // Only open detail if the click is NOT on a button or input
-                 if (item.type === 'String') return;
+                 if (['String', 'Switch', 'Dimmer'].includes(item.type)) return;
                  if ((e.target as HTMLElement).tagName === 'BUTTON' || (e.target as HTMLElement).tagName === 'INPUT') return;
                  setSelectedItem(item);
                }}
