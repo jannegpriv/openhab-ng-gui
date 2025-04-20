@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
 import { getApiBaseUrl } from './apiBaseUrl';
 
+// Helper to join URLs safely (avoids double slashes)
+function joinUrl(base: string, path: string) {
+  if (!base.endsWith("/")) base += "/";
+  if (path.startsWith("/")) path = path.slice(1);
+  return base + path;
+}
+
 import ItemDetailWithChart from './ItemDetailWithChart';
 
 // Import CSS
@@ -31,7 +38,9 @@ function App() {
     setError(null);
 
     const fetchAddons = async (serviceId: string) => {
-      const res = await fetch(`${getApiBaseUrl()}/rest/addons?serviceId=${serviceId}`, {
+      const url = joinUrl(getApiBaseUrl(), `/rest/addons?serviceId=${serviceId}`);
+console.log('[fetchAddons] Fetching:', url);
+const res = await fetch(url, {
         headers: {
           "Authorization": "Basic " + btoa(email + ":" + password),
           "X-OPENHAB-TOKEN": ohToken,
@@ -110,7 +119,9 @@ function App() {
     // Helper: Get all items linked to things of this binding
     async function fetchBindingItems() {
       // 1. Fetch all things
-      const thingsRes = await fetch(`${getApiBaseUrl()}/rest/things`, {
+      const thingsUrl = joinUrl(getApiBaseUrl(), '/rest/things');
+console.log('[fetchThings] Fetching:', thingsUrl);
+const thingsRes = await fetch(thingsUrl, {
         headers: {
           "Authorization": "Basic " + btoa(email + ":" + password),
           "X-OPENHAB-TOKEN": ohToken,
@@ -135,7 +146,9 @@ function App() {
         }
       });
       // 4. Fetch all items
-      const itemsRes = await fetch(`${getApiBaseUrl()}/rest/items`, {
+      const itemsUrl = joinUrl(getApiBaseUrl(), '/rest/items');
+console.log('[fetchItems] Fetching:', itemsUrl);
+const itemsRes = await fetch(itemsUrl, {
         headers: {
           "Authorization": "Basic " + btoa(email + ":" + password),
           "X-OPENHAB-TOKEN": ohToken,
@@ -384,7 +397,9 @@ function App() {
                 item.type === 'Switch' ? (
                   <SwitchButton item={item} email={email} password={password} ohToken={ohToken} onItemUpdate={async () => {
   // Fetch updated item state and update items array
-  const res = await fetch(`${getApiBaseUrl()}/rest/items/${encodeURIComponent(item.name)}`, {
+  const url = joinUrl(getApiBaseUrl(), `/rest/items/${encodeURIComponent(item.name)}`);
+console.log('[fetchItem] Fetching:', url);
+const res = await fetch(url, {
     headers: {
       'Authorization': 'Basic ' + btoa(email + ':' + password),
       'X-OPENHAB-TOKEN': ohToken,
@@ -399,7 +414,9 @@ function App() {
                 ) : item.type === 'Dimmer' ? (
                   <DimmerSlider item={item} email={email} password={password} ohToken={ohToken} onItemUpdate={async () => {
                     // Fetch updated item state and update items array
-                    const res = await fetch(`${getApiBaseUrl()}/rest/items/${encodeURIComponent(item.name)}`, {
+                    const url = joinUrl(getApiBaseUrl(), `/rest/items/${encodeURIComponent(item.name)}`);
+console.log('[fetchItem] Fetching:', url);
+const res = await fetch(url, {
                       headers: {
                         'Authorization': 'Basic ' + btoa(email + ':' + password),
                         'X-OPENHAB-TOKEN': ohToken,
@@ -449,7 +466,9 @@ export function SwitchButton({ item, email, password, ohToken, onItemUpdate }: {
     setLoading(command);
     setError(null);
     try {
-      const res = await fetch(`${getApiBaseUrl()}/rest/items/${encodeURIComponent(item.name)}`, {
+      const url = joinUrl(getApiBaseUrl(), `/rest/items/${encodeURIComponent(item.name)}`);
+console.log('[fetchItem] Fetching:', url);
+const res = await fetch(url, {
         method: 'POST',
         headers: {
           'Authorization': 'Basic ' + btoa(email + ':' + password),
@@ -565,7 +584,9 @@ export function DimmerSlider({ item, email, password, ohToken, onItemUpdate }: {
         setError(null);
         try {
           // 1. Send the value to the backend
-          const res = await fetch(`${getApiBaseUrl()}/rest/items/${encodeURIComponent(item.name)}`, {
+          const url = joinUrl(getApiBaseUrl(), `/rest/items/${encodeURIComponent(item.name)}`);
+console.log('[fetchItem] Fetching:', url);
+const res = await fetch(url, {
             method: 'POST',
             headers: {
               'Authorization': 'Basic ' + btoa(email + ':' + password),
@@ -637,7 +658,9 @@ export function DimmerSlider({ item, email, password, ohToken, onItemUpdate }: {
           
           setError(null);
           try {
-            const res = await fetch(`${getApiBaseUrl()}/rest/items/${encodeURIComponent(item.name)}`, {
+            const url = joinUrl(getApiBaseUrl(), `/rest/items/${encodeURIComponent(item.name)}`);
+console.log('[fetchItem] Fetching:', url);
+const res = await fetch(url, {
               method: 'POST',
               headers: {
                 'Authorization': 'Basic ' + btoa(email + ':' + password),
@@ -664,7 +687,9 @@ export function DimmerSlider({ item, email, password, ohToken, onItemUpdate }: {
           
           setError(null);
           try {
-            const res = await fetch(`${getApiBaseUrl()}/rest/items/${encodeURIComponent(item.name)}`, {
+            const url = joinUrl(getApiBaseUrl(), `/rest/items/${encodeURIComponent(item.name)}`);
+console.log('[fetchItem] Fetching:', url);
+const res = await fetch(url, {
               method: 'POST',
               headers: {
                 'Authorization': 'Basic ' + btoa(email + ':' + password),
