@@ -12,6 +12,93 @@ interface ItemDetailWithChartProps {
 }
 
 const ItemDetailWithChart: React.FC<ItemDetailWithChartProps> = ({ item, email, password, ohToken, onBack, onItemUpdate }) => {
+  // Show image if item is of type Image
+  // Show map for Location items
+  if (item.type === 'Location') {
+    // openHAB Location state format: 'lat,long[,alt]'
+    let lat = null, lon = null, alt = null, parseError = false;
+    if (typeof item.state === 'string') {
+      const parts = item.state.split(',');
+      if (parts.length >= 2) {
+        lat = parseFloat(parts[0]);
+        lon = parseFloat(parts[1]);
+        if (parts.length > 2) alt = parseFloat(parts[2]);
+        if (isNaN(lat) || isNaN(lon)) parseError = true;
+      } else {
+        parseError = true;
+      }
+    } else {
+      parseError = true;
+    }
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-8 w-full h-full flex flex-col mx-0 mt-8 items-center justify-center">
+        <button
+          className="mb-4 px-4 py-2 bg-[#e64a19] text-white rounded hover:bg-[#ff7043] w-fit"
+          onClick={onBack}
+        >
+          ← Back to Items
+        </button>
+        <div className="text-2xl font-bold text-gray-900 mb-4" title={item.name}>{item.name.replace(/_/g, ' ')}</div>
+        {item.label && <div className="text-lg text-gray-600 mb-4">{item.label}</div>}
+        {parseError ? (
+          <div className="text-red-500">Invalid location format: {String(item.state)}</div>
+        ) : (
+          <>
+            <div className="mb-2 text-gray-700">Lat: {lat}, Lon: {lon}{alt !== null ? `, Alt: ${alt}` : ''}</div>
+            {/* Only render map if lat/lon are valid */}
+            {(lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon)) ? (
+              <>
+                <iframe
+                  title="Location Map"
+                  width="900"
+                  height="600"
+                  className="rounded border border-gray-300 shadow-lg"
+                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${lon-0.01}%2C${lat-0.01}%2C${lon+0.01}%2C${lat+0.01}&layer=mapnik&marker=${lat}%2C${lon}`}
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                />
+                <div className="text-xs text-gray-400 mt-2">
+                  <a href={`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=16/${lat}/${lon}`} target="_blank" rel="noopener noreferrer" className="underline text-[#e64a19]">View on OpenStreetMap</a>
+                </div>
+              </>
+            ) : (
+              <div className="text-red-400">Could not parse latitude/longitude.</div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
+
+  if (item.type === 'Image') {
+    // Use base64 data if present, otherwise fallback to REST API URL
+    const isDataUrl = typeof item.state === 'string' && item.state.startsWith('data:image/');
+    const imageUrl = isDataUrl
+      ? item.state
+      : `http://localhost:3001/rest/items/${encodeURIComponent(item.name)}/state`;
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-8 w-full h-full flex flex-col mx-0 mt-8 items-center justify-center">
+        <button
+          className="mb-4 px-4 py-2 bg-[#e64a19] text-white rounded hover:bg-[#ff7043] w-fit"
+          onClick={onBack}
+        >
+          ← Back to Items
+        </button>
+        <div className="text-2xl font-bold text-gray-900 mb-4" title={item.name}>{item.name.replace(/_/g, ' ')}</div>
+        {item.label && <div className="text-lg text-gray-600 mb-4">{item.label}</div>}
+        <img
+          src={imageUrl}
+          alt={item.label || item.name}
+          className="max-w-full max-h-[60vh] rounded border border-gray-300 shadow-lg"
+          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+        />
+        <div className="text-gray-400 text-xs mt-2">If the image does not load, check the item state or permissions.</div>
+        {/* Debug: show src type */}
+        <div className="text-xs text-gray-300 mt-1">Source: {isDataUrl ? 'base64 (data URL)' : 'REST API'}</div>
+      </div>
+    );
+  }
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
