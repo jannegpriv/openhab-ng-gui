@@ -4,5 +4,5 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/openhab-ng-gui/', // Set base path for GitHub Pages
+  base: '/', // Set base path for Render.com static hosting
 })
