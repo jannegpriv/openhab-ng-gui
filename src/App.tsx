@@ -171,24 +171,28 @@ const itemsRes = await fetch(itemsUrl, {
     <div className="flex h-screen">
       {/* Sidebar */}
       <aside className="w-64 h-screen bg-[#181818] border-r-2 border-[#e64a19] flex flex-col">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">Add-ons</h2>
-          <button
-            className="ml-2 px-4 py-2 bg-[#e64a19] text-white rounded hover:bg-[#ff7043] text-xs shadow transition-colors duration-150"
-            onClick={() => {
-              localStorage.removeItem("oh_email");
-              localStorage.removeItem("oh_password");
-              localStorage.removeItem("oh_token");
-              setEmail("");
-              setPassword("");
-              setOhToken("");
-              
-              setSelected(null);
-            }}
-          >
-            Log out
-          </button>
-        </div>
+         <div className="flex items-center justify-between mb-4">
+           <h2 className="text-xl font-bold">Add-ons</h2>
+           {(email && password && ohToken) && (
+             <button
+               className="ml-2 px-4 py-2 bg-[#e64a19] text-white rounded hover:bg-[#ff7043] text-xs shadow transition-colors duration-150"
+               onClick={() => {
+                 localStorage.removeItem("oh_email");
+                 localStorage.removeItem("oh_password");
+                 localStorage.removeItem("oh_token");
+                 setEmail("");
+                 setPassword("");
+                 setOhToken("");
+                 setSelected(null);
+               }}
+             >
+               Log out
+             </button>
+           )}
+         </div>
+         {(email && password && ohToken) && (
+           <div className="text-xs text-gray-400 mb-2 ml-1">Logged in as <span className="font-semibold">{email}</span></div>
+         )}
         {(!email || !password || !ohToken) ? (
           <div className="space-y-2">
             <input
