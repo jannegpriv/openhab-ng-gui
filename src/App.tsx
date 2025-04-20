@@ -374,14 +374,15 @@ function App() {
           })
           .map((item) => (
             <tr
-              key={item.name}
-              className="hover:bg-[#333] cursor-pointer"
-              onClick={e => {
-                // Only open detail if the click is NOT on a button or input
-                if ((e.target as HTMLElement).tagName === 'BUTTON' || (e.target as HTMLElement).tagName === 'INPUT') return;
-                setSelectedItem(item);
-              }}
-            >
+               key={item.name}
+               className={`${item.type === 'String' ? '' : 'hover:bg-[#333] cursor-pointer'}`}
+               onClick={e => {
+                 // Only open detail if the click is NOT on a button or input
+                 if (item.type === 'String') return;
+                 if ((e.target as HTMLElement).tagName === 'BUTTON' || (e.target as HTMLElement).tagName === 'INPUT') return;
+                 setSelectedItem(item);
+               }}
+             >
               <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-100 overflow-hidden text-ellipsis max-w-[16rem]">{item.name}</td>
               <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-100 overflow-hidden text-ellipsis max-w-[24rem]">{item.label}</td>
               <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-100">{
