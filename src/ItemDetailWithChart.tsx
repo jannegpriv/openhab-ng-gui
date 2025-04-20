@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Brush } from 'recharts';
 import { SwitchButton, DimmerSlider } from './App';
 
@@ -14,6 +14,129 @@ interface ItemDetailWithChartProps {
 const ItemDetailWithChart: React.FC<ItemDetailWithChartProps> = ({ item, email, password, ohToken, onBack, onItemUpdate }) => {
   // Show image if item is of type Image
   // Show map for Location items
+  // Show color picker for Color items
+  if (item.type === 'Color') {
+    // openHAB Color state format: 'H,S,B'
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    // Parse HSB from state
+    const [color, setColor] = useState(() => {
+      if (typeof item.state === 'string') {
+        const [h, s, b] = item.state.split(',').map(Number);
+        if ([h, s, b].every(v => !isNaN(v))) {
+          return { h, s, b };
+        }
+      }
+      return { h: 0, s: 0, b: 0 };
+    });
+
+    // Convert HSB to RGB
+    function hsbToRgb(h: number, s: number, b: number) {
+      s = s / 100;
+      b = b / 100;
+      const k = (n: number) => (n + h / 60) % 6;
+      const f = (n: number) => b - b * s * Math.max(Math.min(k(n), 4 - k(n), 1), 0);
+      return {
+        r: Math.round(255 * f(5)),
+        g: Math.round(255 * f(3)),
+        b: Math.round(255 * f(1)),
+      };
+    }
+    // Convert RGB to hex
+    function rgbToHex(r: number, g: number, b: number) {
+      return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+    }
+    // Convert hex to HSB
+    function hexToHsb(hex: string) {
+      let r = 0, g = 0, b = 0;
+      if (hex.length === 7) {
+        r = parseInt(hex.slice(1, 3), 16);
+        g = parseInt(hex.slice(3, 5), 16);
+        b = parseInt(hex.slice(5, 7), 16);
+      }
+      // Convert RGB to HSB
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h = 0, s = 0, v = max;
+      const d = max - min;
+      s = max === 0 ? 0 : d / max;
+      if (max === min) {
+        h = 0;
+      } else {
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h *= 60;
+      }
+      return {
+        h: Math.round(h),
+        s: Math.round(s * 100),
+        b: Math.round(v * 100),
+      };
+    }
+    const rgb = hsbToRgb(color.h, color.s, color.b);
+    const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
+
+    // Always use a stable callback to avoid remounting input
+    const handleColorChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const hexVal = e.target.value;
+      const hsb = hexToHsb(hexVal);
+      setColor(hsb);
+      setLoading(true);
+      setError(null);
+      try {
+        // Always set Content-Type
+        const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Basic ' + btoa(email + ':' + password),
+            'X-OPENHAB-TOKEN': ohToken,
+            'Content-Type': 'text/plain',
+          },
+          body: `${hsb.h}, ${hsb.s}, ${hsb.b}`,
+        });
+        if (!res.ok) throw new Error(await res.text());
+        if (onItemUpdate) onItemUpdate();
+      } catch (err: any) {
+        setError(err.message || 'Failed to set color');
+      } finally {
+        setLoading(false);
+      }
+    }, [email, password, ohToken, item.name, onItemUpdate]);
+
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-8 w-full h-full flex flex-col mx-0 mt-8 items-center justify-center">
+        <button
+          className="mb-4 px-4 py-2 bg-[#e64a19] text-white rounded hover:bg-[#ff7043] w-fit"
+          onClick={onBack}
+        >
+          ← Back to Items
+        </button>
+        <div className="text-2xl font-bold text-gray-900 mb-4" title={item.name}>{item.name.replace(/_/g, ' ')}</div>
+        {item.label && <div className="text-lg text-gray-600 mb-4">{item.label}</div>}
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex items-center gap-4">
+            <span className="inline-block w-16 h-16 rounded border border-gray-300 shadow-lg" style={{ background: hex }} title={hex} />
+            <input
+              type="color"
+              value={hex}
+              onChange={handleColorChange}
+              className="w-16 h-16 border-none bg-transparent cursor-pointer"
+              disabled={loading}
+              aria-label="Pick color"
+              style={{ minWidth: 64, minHeight: 64 }}
+            />
+          </div>
+          <div className="text-sm text-gray-700">HSB: {color.h}, {color.s}, {color.b} &nbsp; | &nbsp; HEX: {hex}</div>
+          {loading && <div className="text-[#e64a19] text-xs">Setting color…</div>}
+          {error && <div className="text-red-500 text-xs">{error}</div>}
+        </div>
+      </div>
+    );
+  }
+
   if (item.type === 'Location') {
     // openHAB Location state format: 'lat,long[,alt]'
     let lat = null, lon = null, alt = null, parseError = false;
@@ -87,12 +210,14 @@ const ItemDetailWithChart: React.FC<ItemDetailWithChartProps> = ({ item, email, 
         </button>
         <div className="text-2xl font-bold text-gray-900 mb-4" title={item.name}>{item.name.replace(/_/g, ' ')}</div>
         {item.label && <div className="text-lg text-gray-600 mb-4">{item.label}</div>}
-        <img
-          src={imageUrl}
-          alt={item.label || item.name}
-          className="max-w-full max-h-[60vh] rounded border border-gray-300 shadow-lg"
-          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-        />
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', minHeight: '60vh', maxHeight: '80vh', background: '#f9f9f9', borderRadius: '1rem', boxShadow: '0 4px 24px rgba(230,74,25,0.09)' }}>
+          <img
+            src={imageUrl}
+            alt={item.label || item.name}
+            style={{ maxWidth: '90vw', maxHeight: '75vh', objectFit: 'contain', borderRadius: '1rem' }}
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        </div>
         <div className="text-gray-400 text-xs mt-2">If the image does not load, check the item state or permissions.</div>
         {/* Debug: show src type */}
         <div className="text-xs text-gray-300 mt-1">Source: {isDataUrl ? 'base64 (data URL)' : 'REST API'}</div>
