@@ -386,7 +386,20 @@ function App() {
               <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-100 overflow-hidden text-ellipsis max-w-[24rem]">{item.label}</td>
               <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-100">{
                 item.type === 'Switch' ? (
-                  <SwitchButton item={item} email={email} password={password} ohToken={ohToken} onItemUpdate={() => {}} />
+                  <SwitchButton item={item} email={email} password={password} ohToken={ohToken} onItemUpdate={async () => {
+  // Fetch updated item state and update items array
+  const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+    headers: {
+      'Authorization': 'Basic ' + btoa(email + ':' + password),
+      'X-OPENHAB-TOKEN': ohToken,
+      'Accept': 'application/json',
+    },
+  });
+  if (res.ok) {
+    const updated = await res.json();
+    setItems(prev => prev.map(it => it.name === item.name ? updated : it));
+  }
+}} />
                 ) : item.type === 'Dimmer' ? (
                   <DimmerSlider item={item} email={email} password={password} ohToken={ohToken} onItemUpdate={async () => {
                     // Fetch updated item state and update items array
@@ -450,7 +463,30 @@ export function SwitchButton({ item, email, password, ohToken, onItemUpdate }: {
         body: command,
       });
       if (!res.ok) throw new Error(await res.text());
-      if (onItemUpdate) onItemUpdate();
+      // Poll for state update up to 5 times
+      let updated = false;
+      for (let i = 0; i < 5; i++) {
+        await new Promise(r => setTimeout(r, 400));
+        const stateRes = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+          headers: {
+            'Authorization': 'Basic ' + btoa(email + ':' + password),
+            'X-OPENHAB-TOKEN': ohToken,
+            'Accept': 'application/json',
+          },
+        });
+        if (stateRes.ok) {
+          const data = await stateRes.json();
+          if (data.state === command) {
+            updated = true;
+            break;
+          }
+        }
+      }
+      if (onItemUpdate) {
+        await onItemUpdate();
+      } else {
+        window.location.reload();
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to send command');
     } finally {
@@ -458,25 +494,33 @@ export function SwitchButton({ item, email, password, ohToken, onItemUpdate }: {
     }
   }
 
+  const isOn = item.state === 'ON';
+  const isOff = item.state === 'OFF';
+
   return (
     <div className="flex flex-row items-center gap-2">
       <button
-        className={`px-3 py-1 rounded bg-[#e64a19] text-white font-semibold shadow hover:bg-[#ff7043] transition-colors text-xs ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+        className={`px-3 py-1 rounded font-semibold shadow transition-colors text-xs border-2 ${
+          isOn ? 'bg-[#e64a19] text-white border-[#e64a19]' : 'bg-gray-200 text-gray-700 border-gray-300'
+        } hover:${isOn ? 'bg-[#ff7043]' : 'bg-gray-300'} ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
         disabled={!!loading}
         onClick={e => handleCommand('ON', e)}
         title="Send ON command"
+        style={isOn ? { boxShadow: '0 0 0 2px #e64a19' } : {}}
       >
         {loading === 'ON' ? 'Sending...' : 'ON'}
       </button>
       <button
-        className={`px-3 py-1 rounded bg-gray-500 text-white font-semibold shadow hover:bg-gray-700 transition-colors text-xs ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+        className={`px-3 py-1 rounded font-semibold shadow transition-colors text-xs border-2 ${
+          isOff ? 'bg-[#e64a19] text-white border-[#e64a19]' : 'bg-gray-200 text-gray-700 border-gray-300'
+        } hover:${isOff ? 'bg-[#ff7043]' : 'bg-gray-300'} ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
         disabled={!!loading}
         onClick={e => handleCommand('OFF', e)}
         title="Send OFF command"
+        style={isOff ? { boxShadow: '0 0 0 2px #e64a19' } : {}}
       >
         {loading === 'OFF' ? 'Sending...' : 'OFF'}
       </button>
-      
       {error && <span className="text-red-400 text-xs" title={error}>✖</span>}
     </div>
   );
