@@ -1,4 +1,38 @@
-# React + TypeScript + Vite
+# openhab-ng-gui: React + TypeScript + Vite
+
+## Deploying to GitHub Pages
+
+You can deploy this app as a static site to GitHub Pages. Follow these steps:
+
+### Prerequisites
+- Your project must be in a public GitHub repository (e.g., `https://github.com/your-username/openhab-ng-gui`).
+- You must have `gh-pages` installed (already included in devDependencies).
+
+### Configuration
+1. The Vite config (`vite.config.ts`) is set with the correct base path for GitHub Pages:
+   ```js
+   base: '/openhab-ng-gui/', // repo name
+   ```
+2. The following scripts are in your `package.json`:
+   ```json
+   "predeploy": "npm run build",
+   "deploy": "gh-pages -d dist"
+   ```
+
+### Deployment Steps
+1. Commit and push all your changes.
+2. Run:
+   ```sh
+   npm run deploy
+   ```
+   This will build the app and publish the `dist/` folder to the `gh-pages` branch.
+3. Go to your GitHub repository settings → Pages, and set the source to the `gh-pages` branch and `/ (root)` folder.
+4. Your app will be available at:
+   ```
+   https://<your-username>.github.io/openhab-ng-gui/
+   ```
+
+---
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
