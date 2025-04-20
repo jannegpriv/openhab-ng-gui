@@ -210,11 +210,11 @@ const ItemDetailWithChart: React.FC<ItemDetailWithChartProps> = ({ item, email, 
         </button>
         <div className="text-2xl font-bold text-gray-900 mb-4" title={item.name}>{item.name.replace(/_/g, ' ')}</div>
         {item.label && <div className="text-lg text-gray-600 mb-4">{item.label}</div>}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', minHeight: '60vh', maxHeight: '80vh', background: '#f9f9f9', borderRadius: '1rem', boxShadow: '0 4px 24px rgba(230,74,25,0.09)' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '85vh', margin: 0, padding: 0 }}>
           <img
             src={imageUrl}
             alt={item.label || item.name}
-            style={{ maxWidth: '90vw', maxHeight: '75vh', objectFit: 'contain', borderRadius: '1rem' }}
+            style={{ maxWidth: '95vw', maxHeight: '85vh', width: 'auto', height: 'auto', objectFit: 'contain', borderRadius: '0.5rem', boxShadow: '0 2px 16px rgba(0,0,0,0.12)' }}
             onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
         </div>
