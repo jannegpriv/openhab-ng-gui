@@ -1,11 +1,5 @@
 import React, { useEffect, useState } from "react";
-
-interface Thing {
-  UID: string;
-  label: string;
-  thingTypeUID: string;
-  channels: { uid: string; label: string }[];
-}
+import { getApiBaseUrl } from './apiBaseUrl';
 
 interface Item {
   name: string;
@@ -23,13 +17,13 @@ interface LynkcoPageProps {
 }
 
 const LynkcoPage: React.FC<LynkcoPageProps> = ({ email, password, ohToken }) => {
-  const [things, setThings] = useState<Thing[]>([]);
+  
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Fetch all things
-    fetch("http://localhost:3001/rest/things", {
+    fetch(`${getApiBaseUrl()}/rest/things`, {
       headers: {
         "Authorization": "Basic " + btoa(email + ":" + password),
         "X-OPENHAB-TOKEN": ohToken,
@@ -43,14 +37,13 @@ const LynkcoPage: React.FC<LynkcoPageProps> = ({ email, password, ohToken }) => 
           (t: any) => t.thingTypeUID && t.thingTypeUID.startsWith("lynkco:")
         );
         console.log("[LynkcoPage] LynkCo things:", lynkcoThings);
-        setThings(lynkcoThings);
         // Get all LynkCo channel linked item names
         const lynkcoChannelLinkedItemNames = lynkcoThings.flatMap((t: any) =>
           t.channels.flatMap((c: any) => (c.linkedItems || []))
         );
         console.log("[LynkcoPage] LynkCo linked item names:", lynkcoChannelLinkedItemNames);
         // Fetch all items
-        fetch("http://localhost:3001/rest/items", {
+        fetch(`${getApiBaseUrl()}/rest/items`, {
           headers: {
             "Authorization": "Basic " + btoa(email + ":" + password),
             "X-OPENHAB-TOKEN": ohToken,

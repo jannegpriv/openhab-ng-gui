@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: openhab-ng-gui-proxy
+    env: node
+    plan: free
+    buildCommand: "npm install"
+    startCommand: "node openhab-proxy.js"
+    envVars:
+      - key: PORT
+        value: 3001
+    autoDeploy: true
+    
+  - type: web
+    name: openhab-ng-gui-frontend
+    env: static
+    plan: free
+    buildCommand: "npm install && npm run build"
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: "https://openhab-ng-gui-proxy.onrender.com/rest/items/"
+    autoDeploy: true

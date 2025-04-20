@@ -1,16 +1,11 @@
 import { useState, useEffect } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import ItemDetailWithChart from './ItemDetailWithChart';
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import LynkcoPage from './LynkcoPage';
+import { getApiBaseUrl } from './apiBaseUrl';
 
-interface Binding {
-  id: string;
-  name: string;
-  description: string;
-}
+import ItemDetailWithChart from './ItemDetailWithChart';
+
+// Import CSS
+import './App.css'
+
 
 function App() {
   const [typeFilter, setTypeFilter] = useState<string>("");
@@ -18,7 +13,7 @@ function App() {
   const [email, setEmail] = useState(() => localStorage.getItem("oh_email") || "");
   const [password, setPassword] = useState(() => localStorage.getItem("oh_password") || "");
   const [ohToken, setOhToken] = useState(() => localStorage.getItem("oh_token") || "");
-  const [bindings, setBindings] = useState<Binding[]>([]);
+  
   const [selected, setSelected] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const [items, setItems] = useState<any[]>([]);
@@ -36,7 +31,7 @@ function App() {
     setError(null);
 
     const fetchAddons = async (serviceId: string) => {
-      const res = await fetch(`http://localhost:3001/rest/addons?serviceId=${serviceId}`, {
+      const res = await fetch(`${getApiBaseUrl()}/rest/addons?serviceId=${serviceId}`, {
         headers: {
           "Authorization": "Basic " + btoa(email + ":" + password),
           "X-OPENHAB-TOKEN": ohToken,
@@ -115,7 +110,7 @@ function App() {
     // Helper: Get all items linked to things of this binding
     async function fetchBindingItems() {
       // 1. Fetch all things
-      const thingsRes = await fetch("http://localhost:3001/rest/things", {
+      const thingsRes = await fetch(`${getApiBaseUrl()}/rest/things`, {
         headers: {
           "Authorization": "Basic " + btoa(email + ":" + password),
           "X-OPENHAB-TOKEN": ohToken,
@@ -140,7 +135,7 @@ function App() {
         }
       });
       // 4. Fetch all items
-      const itemsRes = await fetch("http://localhost:3001/rest/items", {
+      const itemsRes = await fetch(`${getApiBaseUrl()}/rest/items`, {
         headers: {
           "Authorization": "Basic " + btoa(email + ":" + password),
           "X-OPENHAB-TOKEN": ohToken,
@@ -174,7 +169,7 @@ function App() {
               setEmail("");
               setPassword("");
               setOhToken("");
-              setBindings([]);
+              
               setSelected(null);
             }}
           >
@@ -301,7 +296,7 @@ function App() {
                 onBack={() => setSelectedItem(null)}
                 onItemUpdate={async () => {
                   // Fetch updated item state and update selectedItem
-                  const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(selectedItem.name)}`, {
+                  const res = await fetch(`${getApiBaseUrl()}/rest/items/${encodeURIComponent(selectedItem.name)}`, {
                     headers: {
                       'Authorization': 'Basic ' + btoa(email + ':' + password),
                       'X-OPENHAB-TOKEN': ohToken,
@@ -389,7 +384,7 @@ function App() {
                 item.type === 'Switch' ? (
                   <SwitchButton item={item} email={email} password={password} ohToken={ohToken} onItemUpdate={async () => {
   // Fetch updated item state and update items array
-  const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+  const res = await fetch(`${getApiBaseUrl()}/rest/items/${encodeURIComponent(item.name)}`, {
     headers: {
       'Authorization': 'Basic ' + btoa(email + ':' + password),
       'X-OPENHAB-TOKEN': ohToken,
@@ -404,7 +399,7 @@ function App() {
                 ) : item.type === 'Dimmer' ? (
                   <DimmerSlider item={item} email={email} password={password} ohToken={ohToken} onItemUpdate={async () => {
                     // Fetch updated item state and update items array
-                    const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+                    const res = await fetch(`${getApiBaseUrl()}/rest/items/${encodeURIComponent(item.name)}`, {
                       headers: {
                         'Authorization': 'Basic ' + btoa(email + ':' + password),
                         'X-OPENHAB-TOKEN': ohToken,
@@ -454,7 +449,7 @@ export function SwitchButton({ item, email, password, ohToken, onItemUpdate }: {
     setLoading(command);
     setError(null);
     try {
-      const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+      const res = await fetch(`${getApiBaseUrl()}/rest/items/${encodeURIComponent(item.name)}`, {
         method: 'POST',
         headers: {
           'Authorization': 'Basic ' + btoa(email + ':' + password),
@@ -465,10 +460,10 @@ export function SwitchButton({ item, email, password, ohToken, onItemUpdate }: {
       });
       if (!res.ok) throw new Error(await res.text());
       // Poll for state update up to 5 times
-      let updated = false;
+      
       for (let i = 0; i < 5; i++) {
         await new Promise(r => setTimeout(r, 400));
-        const stateRes = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+        const stateRes = await fetch(`${getApiBaseUrl()}/rest/items/${encodeURIComponent(item.name)}`, {
           headers: {
             'Authorization': 'Basic ' + btoa(email + ':' + password),
             'X-OPENHAB-TOKEN': ohToken,
@@ -478,7 +473,6 @@ export function SwitchButton({ item, email, password, ohToken, onItemUpdate }: {
         if (stateRes.ok) {
           const data = await stateRes.json();
           if (data.state === command) {
-            updated = true;
             break;
           }
         }
@@ -571,7 +565,7 @@ export function DimmerSlider({ item, email, password, ohToken, onItemUpdate }: {
         setError(null);
         try {
           // 1. Send the value to the backend
-          const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+          const res = await fetch(`${getApiBaseUrl()}/rest/items/${encodeURIComponent(item.name)}`, {
             method: 'POST',
             headers: {
               'Authorization': 'Basic ' + btoa(email + ':' + password),
@@ -590,7 +584,7 @@ export function DimmerSlider({ item, email, password, ohToken, onItemUpdate }: {
           if (!res.ok) throw new Error(backendResponse);
           
           // 2. Immediately fetch the latest state from the backend
-          const stateRes = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+          const stateRes = await fetch(`${getApiBaseUrl()}/rest/items/${encodeURIComponent(item.name)}`, {
             headers: {
               'Authorization': 'Basic ' + btoa(email + ':' + password),
               'X-OPENHAB-TOKEN': ohToken,
@@ -643,7 +637,7 @@ export function DimmerSlider({ item, email, password, ohToken, onItemUpdate }: {
           
           setError(null);
           try {
-            const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+            const res = await fetch(`${getApiBaseUrl()}/rest/items/${encodeURIComponent(item.name)}`, {
               method: 'POST',
               headers: {
                 'Authorization': 'Basic ' + btoa(email + ':' + password),
@@ -670,7 +664,7 @@ export function DimmerSlider({ item, email, password, ohToken, onItemUpdate }: {
           
           setError(null);
           try {
-            const res = await fetch(`http://localhost:3001/rest/items/${encodeURIComponent(item.name)}`, {
+            const res = await fetch(`${getApiBaseUrl()}/rest/items/${encodeURIComponent(item.name)}`, {
               method: 'POST',
               headers: {
                 'Authorization': 'Basic ' + btoa(email + ':' + password),

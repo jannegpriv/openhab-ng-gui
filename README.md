@@ -1,5 +1,18 @@
 # openhab-ng-gui: React + TypeScript + Vite
 
+## 🚀 One-Click Deploy to Render.com
+
+Want to try this app yourself? You can deploy both the frontend and proxy with a single click:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
+1. Click the button above and connect your GitHub account.
+2. Render will set up both the Express proxy and the frontend for you.
+3. Once deployed, update the frontend's API URL (if needed) to point to your new proxy's URL.
+4. Enjoy your own openHAB dashboard in the cloud!
+
+---
+
 ## Deploying to GitHub Pages
 
 You can deploy this app as a static site to GitHub Pages. Follow these steps:
