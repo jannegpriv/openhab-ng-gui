@@ -79,7 +79,7 @@ const ItemDetailWithChart: React.FC<ItemDetailWithChartProps> = ({ item, email, 
 
     // Debounced color update logic
     const [pendingColor, setPendingColor] = useState(hsv);
-    const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
+    const [debounceTimeout, setDebounceTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
 
     // Update color preview instantly
     const handleColorChange = (newHsv: HsvColor) => {
