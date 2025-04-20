@@ -1,0 +1,8 @@
+# Dockerfile for openHAB proxy
+FROM node:18-alpine
+WORKDIR /app
+COPY package.json ./
+COPY openhab-proxy.js ./
+RUN npm install express http-proxy-middleware node-fetch@3
+EXPOSE 3001
+CMD ["node", "openhab-proxy.js"]

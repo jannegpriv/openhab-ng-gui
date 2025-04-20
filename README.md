@@ -21,6 +21,78 @@ If you do need to set it, add `VITE_API_BASE_URL` in your frontend's Render.com 
 
 ---
 
+## Running with Docker Compose
+
+You can run both the frontend and proxy together in Docker containers using Docker Compose. This is a convenient way to test the full stack locally without installing Node.js or dependencies directly on your machine.
+
+### 1. Build and start the containers
+```sh
+docker-compose up --build
+```
+- This will build both the proxy and frontend images.
+- The proxy will be available at http://localhost:3001
+- The frontend will be available at http://localhost:5173
+
+### 2. Log in
+- Open http://localhost:5173 in your browser.
+- Enter your openHAB credentials and API token as usual.
+
+### Notes
+- The frontend is served by nginx and will proxy API requests to the `proxy` container.
+- You can stop the stack with `Ctrl+C` and remove containers with `docker-compose down`.
+- This Docker setup does **not** affect your ability to run locally with `npm run dev` or to deploy on Render.com.
+
+---
+
+## Running Locally
+
+You can run the openHAB NG GUI app locally for development or testing. This is useful if you want to use your own openHAB instance or test changes before deploying.
+
+### Prerequisites
+- Node.js (v16 or higher recommended)
+- npm (comes with Node.js)
+- An openHAB backend or the included proxy running locally (default: http://localhost:3001)
+
+### 1. Clone the repository
+```sh
+git clone https://github.com/your-username/openhab-ng-gui.git
+cd openhab-ng-gui
+```
+
+### 2. Install dependencies
+```sh
+npm install
+```
+
+### 3. Start the proxy (if needed)
+If you want to use the included Node.js proxy for local openHAB API access, run:
+```sh
+node openhab-proxy.js
+```
+This will start the proxy on port 3001 by default.
+
+### 4. Start the frontend
+```sh
+npm run dev
+```
+The app will start on http://localhost:5173 (or another port if 5173 is in use).
+
+### 5. Log in
+- Enter your openHAB credentials and API token in the login form.
+- By default, the frontend will talk to the proxy at http://localhost:3001.
+- If you want to use a different backend/proxy, set the `VITE_API_BASE_URL` environment variable before starting the frontend:
+  ```sh
+  export VITE_API_BASE_URL="http://your-proxy-url"
+  npm run dev
+  ```
+
+### Troubleshooting
+- Make sure your proxy or backend is running and reachable at the configured URL.
+- If you see CORS errors, ensure you are using the proxy and not trying to connect directly to a remote openHAB server.
+- For further help, check the console output or open an issue.
+
+---
+
 ## Deploying to GitHub Pages
 
 You can deploy this app as a static site to GitHub Pages. Follow these steps:

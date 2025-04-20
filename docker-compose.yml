@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - proxy
+    restart: unless-stopped
+    environment:
+      - VITE_API_BASE_URL=http://proxy:3001
