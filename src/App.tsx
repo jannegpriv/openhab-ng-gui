@@ -232,7 +232,7 @@ const itemsRes = await fetch(itemsUrl, {
               Use your credentials @myopenhab.org. Create an API token on your local instance.
             </div>
           </div>
-        ) : (loading && !email) ? (
+        ) : (loading) ? (
           <div className="flex justify-center items-center h-full text-blue-600">Loading bindings...</div>
         ) : error ? (
           <div className="text-red-600 text-xs whitespace-pre-line">{error}</div>
